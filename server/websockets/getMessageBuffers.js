@@ -44,10 +44,10 @@ export default function getMessageBuffers (
             
                 return new Promise(resolve => {
                     if(pushQueue.length) {
-                        resolve(pushQueue.shift()({
-                            value,
+                        resolve({
+                            value: pushQueue.shift(),
                             done: false
-                        }));
+                        });
                     } else {
                         awaitQueue.push(resolve);
                     }
