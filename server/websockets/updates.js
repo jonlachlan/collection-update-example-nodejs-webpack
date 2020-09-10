@@ -5,7 +5,7 @@
 import url from 'url';
 import sendHandshake from './sendHandshake.js';
 import sendMessageFactory from './sendMessageFactory.js';
-import getMessagesFactory from './getUnparsedMessagesFactory.js';
+import getMessagesFactory from './getMessagesFactory.js';
 import shortid from 'shortid';
 import quillUpdates from '../store/quillDeltaUpdates.js';
 
