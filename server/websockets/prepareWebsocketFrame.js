@@ -45,13 +45,13 @@ export default function prepareWebsocketFrame (
         // All are undefined by default
         preparedMessage.fill(
             (
-                fin + Math.pow(2, 3)
+                (fin ? 1 : 0) * Math.pow(2, 7)
                 +
-                rsv1 + Math.pow(2, 2)
+                (rsv1 ? 1 : 0) * Math.pow(2, 6)
                 +
-                rsv2 + Math.pow(2, 1)
+                (rsv2 ? 1 : 0) * Math.pow(2, 5)
                 +
-                rsv3 + Math.pow(2, 0)
+                (rsv3 ? 1 : 0) * Math.pow(2, 4)
             ),
             0 /* start position */, 
             1 /* end position */
@@ -106,13 +106,13 @@ export default function prepareWebsocketFrame (
     const extended_payload_length_value = 
         Uint8Array.from(payload.length);
       
-    /*
-     * Actual value of extended payload length may consume fewer bytes than ``
-     * allocated
-    */
     extended_payload_length.set(
         extended_payload_length_value,
         (
+            /*
+             * Actual value of extended payload length may consume fewer bytes than 
+             * allocated
+            */
             extended_payload_length_bytes - 
             extended_payload_length_value.length
         ) /* offset */
