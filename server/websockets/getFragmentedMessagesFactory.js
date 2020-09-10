@@ -7,11 +7,12 @@ import parseWebsocketFrame from './parseWebsocketFrame.js';
 import sendMessageFactory from './sendMessageFactory.js';
 
 /* 
- * Because it handles Ping events by sending a Pong, getMessagesFactory should 
- * only be called once for an endpoint (unlike sendMessageFactory), and its 
- * returned async generator should be called only once.
+ * Because it handles Ping events by sending a Pong, 
+ * getFragmentedMessagesFactory should only be called once for an endpoint 
+ * (unlike sendMessageFactory), and its returned async generator should be 
+ * called only once.
 */
-export default function getMessagesFactory (
+export default function getFragmentedMessagesFactory (
     socket /* <stream.Duplex> */
 ) {
     
