@@ -6,7 +6,7 @@ import updates from './updates.js';
 
 export default function (
     request /* <http.IncomingMessage> */, 
-    socket /* <stream.Duplex> */ , 
+    socket /* <stream.Duplex> */, 
     head /* <Buffer> websocket header */
 ) {
        

@@ -3,8 +3,6 @@
 */
 
 import { createHash } from 'crypto';
-import getMessagesFactory from './getUnparsedMessagesFactory.js';
-import sendMessageFactory from './sendMessageFactory.js'
 
 export default function sendHandshake (
     request /* <http.IncomingMessage> */, 
@@ -36,8 +34,4 @@ export default function sendHandshake (
          + '\r\n'
     );
         
-    return [
-        sendMessageFactory(socket),
-        getMessagesFactory(socket)
-    ];
 }

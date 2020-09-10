@@ -5,7 +5,7 @@
 import url from 'url';
 import sendHandshake from './sendHandshake.js';
 import sendMessageFactory from './sendMessageFactory.js';
-import getMessagesFactory from './getMessagesFactory.js';
+import getMessagesFactory from './getUnparsedMessagesFactory.js';
 import shortid from 'shortid';
 import quillUpdates from '../store/quillDeltaUpdates.js';
 
@@ -119,37 +119,7 @@ export default async function (
     const encoder = new TextEncoder('utf-8');
     sendMessage(encoder.encode("hello"), { isUtf8: true });
 
-    const code = 1002; /* protocol error */
-    const reason = "Websocket payload from client was not masked.";
-    const reasonUint8Array = encoder.encode(reason);
-    console.log(reasonUint8Array);
-    const closeMessagePayload = 
-        new Uint8Array(
-            2 + reasonUint8Array.length
-        );
-    closeMessagePayload.fill(
-        // first byte of status code integer
-        code >>> 8, /* drop rightmost 8 bits */
-        0, /* start position */
-        1 /* end position */
-    );
-    closeMessagePayload.fill(
-        // second byte of status code integer
-        code % 256, /* keep rightmost 8 bits */
-        1, /* start position */
-        2 /* end position */
-    );
-    closeMessagePayload.set(
-        reasonUint8Array,
-        2 /* offset */
-    );
-    
-    sendMessage(
-        closeMessagePayload,
-        {
-            opcode: 0x8 /* Close */                
-        }
-    );    
+
 //     for await (
 //         const quillUpdate of quillUpdates({ latestUpdateId: '0' })
 //     ) {
