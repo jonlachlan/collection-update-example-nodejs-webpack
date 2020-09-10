@@ -129,7 +129,7 @@ export default function parseWebsocketFrame (
                     
             if(!most_significant_bit_is_zero)
                 throw new Error(
-                    'Value of extended payload length exceeds 2⁶⁴ - 1'
+                    'Value of extended payload length exceeds 2⁶³ - 1'
                 );
             
             has_extended_payload_length_63 = 
