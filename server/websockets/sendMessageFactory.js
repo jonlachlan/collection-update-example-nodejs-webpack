@@ -19,11 +19,11 @@ export default function sendMessageFactory (
             isUtf8 /* <Boolean> */,
             
             /* For advanced usage */
-            opcode /* <Number> between 0 and 15 */,
-            fin /* <Boolean> */,
-            rsv1 /* <Boolean> */,
-            rsv2 /* <Boolean> */,
-            rsv3 /* <Boolean> */
+            opcode /* Integer <Number> from 0 to 15 */,
+            fin /* Integer <Number> from 0 to 1 */,
+            rsv1 /* Integer <Number> from 0 to 1 */,
+            rsv2 /* Integer <Number> from 0 to 1 */,
+            rsv3 /* Integer <Number> from 0 to 1 */
         } = { isUtf8: false }
     ) {
     

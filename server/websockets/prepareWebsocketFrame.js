@@ -9,11 +9,11 @@ export default function prepareWebsocketFrame (
         isUtf8 /* <Boolean> */,
         
         /* For advanced usage */
-        opcode /* <Number> between 0 and 15 */,
-        fin /* <Boolean> */,
-        rsv1 /* <Boolean> */,
-        rsv2 /* <Boolean> */,
-        rsv3 /* <Boolean> */
+        opcode /* Integer <Number> between 0 and 15 */,
+        fin /* Integer <Number> between 0 and 1 */,
+        rsv1 /* Integer <Number> between 0 and 1 */,
+        rsv2 /* Integer <Number> between 0 and 1 */,
+        rsv3 /* Integer <Number> between 0 and 1 */
     } = { isUtf8: false }
 ) {
 
@@ -116,16 +116,16 @@ export default function prepareWebsocketFrame (
             extended_payload_length_bytes - 
             extended_payload_length_value.length
         ) /* offset */
-    )
+    );
     
     preparedMessage.set(
         extended_payload_length, 
         2 /* offset */
-    )
+    );
     preparedMessage.set(
         payload, 
         2 + extended_payload_length_bytes /* offset */
     );
     
-    return preparedMessage;
+    return preparedMessage /* <Uint8Array> */;
 }

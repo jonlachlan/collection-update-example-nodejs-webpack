@@ -2,7 +2,8 @@
   "name": "collection-update-example-quill-nodejs-webpack",
   "private": true,
   "scripts": {
-    "start": "npx webpack && node ./server/httpServer.js"
+    "start": "npx webpack && node ./server/httpServer.js",
+    "test": "jest --verbose"
   },
   "dependencies": {
     "connect": "^3.7.0",

@@ -45,26 +45,26 @@ export default function parseWebsocketFrame (
     */
 
     // First 16 bits (2 octets) are always part of base frame
-    const control = [
+    const first_16_bits = [
         ...uint2ArrayFromUint8Value(messageUint8[0]),
         ...uint2ArrayFromUint8Value(messageUint8[1])
     ];
     
     /* is final frame */
     const fin = 
-        Boolean(control[0]);
+        first_16_bits[0];
         
     /* reserved bits */
     const rsv1 = 
-        Boolean(control[1]);
+        first_16_bits[1];
     const rsv2 = 
-        Boolean(control[2]);
+        first_16_bits[2];
     const rsv3 = 
-        Boolean(control[3]);
+        first_16_bits[3];
 
     const opcode = 
         parseInt((
-            control
+            first_16_bits
                 .slice(
                     4 /* start */, 
                     8 /* end */
@@ -72,12 +72,12 @@ export default function parseWebsocketFrame (
                 .join('')
         ), 2 /* base */);
         
-    const has_mask = 
-        Boolean(control[8]);
+    const mask = 
+        first_16_bits[8];
 
     const payload_len = 
         parseInt((
-            control
+            first_16_bits
                 .slice(
                     9 /* start */, 
                     17 /* end */
@@ -125,11 +125,11 @@ export default function parseWebsocketFrame (
 
             // the first bit out of the 64 must be zero
             const most_significant_bit_is_zero = 
-                messageUint8[2] < 256; // 2⁸
+                messageUint8[2] < (Math.pow(2, 8));
                     
             if(!most_significant_bit_is_zero)
                 throw new Error(
-                    'Value of extended payload length exceeds 2⁶³ - 1'
+                    `Most significant bit of a 64-bit extended payload length must be zero`
                 );
             
             has_extended_payload_length_63 = 
@@ -163,7 +163,7 @@ export default function parseWebsocketFrame (
     const payload = 
         new Uint8Array(payload_length_value);
 
-    if(has_mask) {
+    if(mask === 1) {
         let masking_key_octets_start_index;
 
         if(has_extended_payload_length_16) {
@@ -246,12 +246,12 @@ export default function parseWebsocketFrame (
     }
     
     return {        
-        fin,
-        rsv1,
-        rsv2,
-        rsv3,
-        opcode,
-        mask: has_mask,
-        payload
+        fin /* Integer <Number> from 0 to 1 */,
+        rsv1 /* Integer <Number> from 0 to 1 */,
+        rsv2 /* Integer <Number> from 0 to 1 */,
+        rsv3 /* Integer <Number> from 0 to 1 */,
+        opcode /* Integer <Number> from 0 to 15 */,
+        mask /* Integer <Number> from 0 to 1 */,
+        payload /* <Uint8Array> */
     };
 }

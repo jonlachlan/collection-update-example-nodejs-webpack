@@ -23,5 +23,5 @@ export default function uint2ArrayFromUint8Value (
         }
         leftmostValue = leftmostValue * 2;
     }
-    return uint2Array;
+    return uint2Array /* <Array> */;
 }

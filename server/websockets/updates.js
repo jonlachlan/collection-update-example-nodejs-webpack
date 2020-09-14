@@ -24,8 +24,16 @@ export default async function (
     const sendMessage = sendMessageFactory(socket);
     const getMessages = getMessagesFactory(socket);
       
+    const protocolHeader = 
+        request.headers['sec-websocket-protocol'] === 'collection-update'
+        ? (
+            'Sec-WebSocket-Protocol: collection-update'
+        ) : (
+            ''
+        );
+        
     const headers = [
-        `Sec-WebSocket-Protocol: ${request.headers['sec-websocket-protocol']}`
+        protocolHeader
     ]; 
     
     sendHandshake(
@@ -37,61 +45,18 @@ export default async function (
     (async () => {
         for await (
             const { 
-                payload,
-                opcode, 
-                fin, 
-                rsv1, 
-                rsv2, 
-                rsv3,
-                mask
+                payload /* <Uint8Array> */,
+                opcode /* Integer <Number> from 0 to 15 */, 
+                rsv1 /* Integer <Number> from 0 to 1 */, 
+                rsv2 /* Integer <Number> from 0 to 1 */, 
+                rsv3 /* Integer <Number> from 0 to 1 */
             } of getMessages()
         ) {
-            if(payload.length && !mask) {
-                /*
-                 * No masking from client, close the connection with a status 
-                 * code
-                */
-                                
-                // Status code is a two-byte unsigned integer
-                const code = 1002; /* protocol error */
-                const reason = "Websocket payload from client was not masked.";
-                const encoder = new TextEncoder('utf-8');
-                const reasonUint8Array = encoder.encode(reason);
-                const closeMessagePayload = 
-                    new Uint8Array(
-                        2 + reasonUint8Array.length
-                    );
-                closeMessagePayload.fill(
-                    // first byte of status code integer
-                    code >>> 8, /* drop rightmost 8 bits */
-                    0, /* start position */
-                    1 /* end position */
-                );
-                closeMessagePayload.fill(
-                    // second byte of status code integer
-                    code % 256, /* keep rightmost 8 bits */
-                    1, /* start position */
-                    2 /* end position */
-                );
-                closeMessagePayload.set(
-                    reasonUint8Array,
-                    2 /* offset */
-                );            
-                
-                sendMessage(
-                    closeMessagePayload,
-                    {
-                        opcode: 0x8 /* Close */                
-                    }
-                );
-            } else if(opcode === 0x9) {
-                // Ping, respond with Pong
-                sendMessage(
-                    payload, 
-                    { 
-                        opcode: 0xA /* Pong */
-                    }
-                );
+            
+            if(opcode === 1) {
+                // Text 
+                const decoder = new TextDecoder("utf-8");
+                console.log(`received message ${decoder.decode(payload)}`);
             } else if(opcode === 0xA) {
                 // Pong
                 console.log("Pong");
@@ -100,13 +65,9 @@ export default async function (
                 console.log("connection closed");
             } else {
                 console.log(opcode);
-                const decoder = new TextDecoder("utf-8");
-                console.log(`received message ${decoder.decode(payload)}`);
             }            
         }
     })();
-    
-    console.log('after');
     
     // Send Ping
     sendMessage(
