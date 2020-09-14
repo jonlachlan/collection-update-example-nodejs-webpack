@@ -37,13 +37,11 @@ import Quill from 'quill';
         console.log(event);
     
         updatesWebsocket.send(
-            // encoder.encode(
-                JSON.stringify(
-                    {
-                        appalacia: 'trail'
-                    }
-                )
-            // )
+            JSON.stringify(
+                {
+                    appalacia: 'trail'
+                }
+            )
         );
     }
     
@@ -51,7 +49,12 @@ import Quill from 'quill';
         console.log(event);
         const decoder = new TextDecoder('utf-8');
         const data = new Response(event.data);
-        console.log(await data.text());
+        const text = await data.text()
+        console.log(text);
+        
+         updatesWebsocket.send(
+            `client received ${text}`
+        );
     }
 
     try {
