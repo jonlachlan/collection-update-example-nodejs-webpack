@@ -180,6 +180,8 @@ export default function getMessagesFactory (
                 isFragmented 
                 && 
                 opcode !== 0x0 
+                &&
+                opcode < 0x8 /* non-control opcode */
                 && 
                 fin === 1
             ) {

@@ -32,6 +32,11 @@ describe('getMessagesFactory', function() {
         );
         
         it.todo(
+            'yields a control frame while a fragmented message has not ' +
+            'received a final frame'
+        );
+        
+        it.todo(
             'yields a message if it is a final frame'
         );
     });
