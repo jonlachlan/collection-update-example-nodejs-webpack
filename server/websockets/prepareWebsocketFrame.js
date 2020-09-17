@@ -100,28 +100,42 @@ export default function prepareWebsocketFrame (
         2 /* end position */
     );    
     
+    // Set extended-payload-length
     const extended_payload_length = 
         new Uint8Array(extended_payload_length_bytes);
-    
-    const extended_payload_length_value = 
-        Uint8Array.from(payload.length);
-      
-    extended_payload_length.set(
-        extended_payload_length_value,
-        (
-            /*
-             * Actual value of extended payload length may consume fewer bytes than 
-             * allocated
-            */
-            extended_payload_length_bytes - 
-            extended_payload_length_value.length
-        ) /* offset */
-    );
+        
+    // turn decimal value of payload length into Uint8Array
+    let remaining = 
+        payload.length;
+    for(
+        let i = 1; 
+        i <= extended_payload_length_bytes; 
+        i++
+    ) {
+        // set value for each byte, from right to left
+        extended_payload_length.fill(
+            (
+                (
+                    remaining 
+                    % 
+                    (Math.pow(2, 8 * i)) /* next highest bit from this byte */
+                ) 
+                >>> (8 * (i - 1)) /* move past bytes already filled */
+                
+            ) /* value */,
+            extended_payload_length.length - i /* start position */,
+            (extended_payload_length.length - i) + 1 /* end position */
+        );
+        remaining -= 
+            remaining % (Math.pow(2, 8 * i)); /* subtract value just counted */
+    }
     
     preparedMessage.set(
         extended_payload_length, 
         2 /* offset */
     );
+    
+    // Set payload-data
     preparedMessage.set(
         payload, 
         2 + extended_payload_length_bytes /* offset */
