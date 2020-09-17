@@ -37,13 +37,14 @@ export default function getMessagesFactory (
         undefined;
     
     function addToFragmentedPayload(
-        payload /* <Uint8Array> */
+        payloadFragment /* <Uint8Array> */
     ) {
+    
         const appendedPayload = 
             new Uint8Array(
                 fragmentedPayload.length 
                 + 
-                payload.length
+                payloadFragment.length
             );
         appendedPayload.set(
             fragmentedPayload
@@ -71,6 +72,7 @@ export default function getMessagesFactory (
                 } 
             of getParsedWebsocketFrames()
         ) {
+        
             if(
                 payload.length 
                 && 
@@ -179,9 +181,7 @@ export default function getMessagesFactory (
             } else if(
                 isFragmented 
                 && 
-                opcode !== 0x0 
-                &&
-                opcode < 0x8 /* non-control opcode */
+                opcode === 0x0 
                 && 
                 fin === 1
             ) {
@@ -209,7 +209,7 @@ export default function getMessagesFactory (
                     undefined;
                 fragmentedMessageRsv1 = 
                     undefined;
-                fragmentedMessageRvs2 = 
+                fragmentedMessageRsv2 = 
                     undefined;
                 fragmentedMessageRsv3 = 
                     undefined;
