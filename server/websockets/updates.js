@@ -6,7 +6,6 @@ import url from 'url';
 import sendHandshake from './sendHandshake.js';
 import sendMessageFactory from './sendMessageFactory.js';
 import getMessagesFactory from './getMessagesFactory.js';
-import shortid from 'shortid';
 import quillUpdates from '../store/quillDeltaUpdates.js';
 
 export default async function (
@@ -21,26 +20,10 @@ export default async function (
         return false;
     }
     
-    const sendMessage = sendMessageFactory(socket);
-    const getMessages = getMessagesFactory(socket);
-      
-    const protocolHeader = 
-        request.headers['sec-websocket-protocol'] === 'collection-update'
-        ? (
-            'Sec-WebSocket-Protocol: collection-update'
-        ) : (
-            ''
-        );
-        
-    const headers = [
-        protocolHeader
-    ]; 
-    
-    sendHandshake(
-        request,
-        socket,
-        headers
-    );
+    const sendMessage = 
+        sendMessageFactory(socket);
+    const getMessages =
+        getMessagesFactory(socket);
     
     (async () => {
         for await (
@@ -56,7 +39,9 @@ export default async function (
             if(opcode === 1) {
                 // Text 
                 const decoder = new TextDecoder("utf-8");
-                console.log(`received message ${decoder.decode(payload)}`);
+                console.log(
+                    `received message ${decoder.decode(payload)}`
+                );
             } else if(opcode === 0xA) {
                 // Pong
                 console.log("Pong");
@@ -64,10 +49,31 @@ export default async function (
                 // Close
                 console.log("connection closed");
             } else {
-                console.log(opcode);
-            }            
+                console.log('opcode ', opcode);
+                console.log(
+                    `received message with payload length ${payload.length}`
+                );
+            }
         }
     })();
+    
+    const protocolHeader = 
+        request.headers['sec-websocket-protocol'] === 'collection-update'
+    ? (
+        'Sec-WebSocket-Protocol: collection-update'
+    ) : (
+        ''
+    );
+    
+    const headers = [
+        protocolHeader
+    ]; 
+    
+    sendHandshake(
+        request,
+        socket,
+        headers
+    );
     
     // Send Ping
     sendMessage(
@@ -77,9 +83,40 @@ export default async function (
         }
     );
     
-    const encoder = new TextEncoder('utf-8');
-    sendMessage(encoder.encode("hello"), { isUtf8: true });
-
+    const encoder = 
+        new TextEncoder('utf-8');
+    sendMessage(
+        encoder.encode("hello"), 
+        { 
+            isUtf8: true 
+        }
+    );
+    
+    const verySmallPayload = new Uint8Array(1);
+    const smallPayload = new Uint8Array(128);
+    const anotherSmallPayload = new Uint8Array(600);
+    const largePayload = new Uint8Array(65536);
+    const anotherLargePayload = new Uint8Array(10000000);
+    
+    sendMessage(
+        verySmallPayload
+    );
+    
+    sendMessage(
+        smallPayload
+    );
+    
+    sendMessage(
+        anotherSmallPayload
+    );
+//     
+//     sendMessage(
+//         largePayload
+//     );
+//     
+//     sendMessage(
+//         anotherLargePayload
+//     );
 
 //     for await (
 //         const quillUpdate of quillUpdates({ latestUpdateId: '0' })
