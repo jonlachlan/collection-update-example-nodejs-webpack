@@ -12,22 +12,14 @@ describe('getParsedWebsocketFramesFactory', function() {
         'returns an async generator'
     );
     
-    describe('returned async generator', function () {
-        
-        it.todo(
-            'adds an initial Promise to \`awaitQueue\` and yields it'
-        );
-        
-        it.todo(
-            'resolves an Object from parseWebsocketFrame if \`pushQueue\` is ' +
-            'not empty on initialization'
-        );
-    });
+    it.todo(
+        'adds a Promise to \`parserQueue\` when a message is sent from a ' +
+        'client and resolves an Object from parseWebsocketFrames in the ' +
+        'returned async generator'
+    );
     
     it.todo(
-        'adds a Buffer to \`pushQueue\` when a message is sent from a client ' +
-        'and resolves an Object from parseWebsocketFrame in the returned ' +
-        'async generator'
+        'handles multiple messages in a single Buffer'
     );
     
 });
