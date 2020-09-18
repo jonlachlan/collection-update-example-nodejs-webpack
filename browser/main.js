@@ -30,11 +30,9 @@ import Quill from 'quill';
 
     updatesWebsocket.onclose = function(event) {
         console.log('close');
-        console.log(event);
     }
     updatesWebsocket.onopen = function(event) {
         console.log('open');
-        console.log(event);
     
         updatesWebsocket.send(
             JSON.stringify(
@@ -46,15 +44,32 @@ import Quill from 'quill';
     }
     
     updatesWebsocket.onmessage = async function (event) {
-        console.log(event);
         const decoder = new TextDecoder('utf-8');
-        const data = new Response(event.data);
-        const text = await data.text()
-        console.log(text);
+        if(event.data.stream) {
+
+            const dataStream = event.data.stream();
+            const reader = dataStream.getReader();
         
-         updatesWebsocket.send(
-            `client received ${text}`
-        );
+            const dataAsyncIterator = {
+                next: async () => {
+                    return await reader.read();
+                },
+                [Symbol.asyncIterator]: function() {
+                    return this;
+                }
+            };
+    
+            let payload;
+            // breaks when finished
+            for await (const chunk of dataAsyncIterator) {
+                payload = chunk;
+            }
+            console.log(`received websocket payload with length ${payload.length}`);
+            
+            updatesWebsocket.send(
+                payload
+            );
+        }
     }
 
     try {
