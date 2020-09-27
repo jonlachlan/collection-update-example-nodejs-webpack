@@ -6,7 +6,6 @@ import url from 'url';
 import sendHandshake from './sendHandshake.js';
 import sendMessageFactory from './sendMessageFactory.js';
 import getMessagesFactory from './getMessagesFactory.js';
-import quillUpdates from '../store/quillDeltaUpdates.js';
 
 export default async function (
     request /* <http.IncomingMessage> */, 
@@ -117,24 +116,6 @@ export default async function (
 //     sendMessage(
 //         anotherLargePayload
 //     );
-
-//     for await (
-//         const quillUpdate of quillUpdates({ latestUpdateId: '0' })
-//     ) {
-//         const payload =
-//             JSON.stringify([
-//                 {
-//                     collection_name: "quillUpdates",
-//                     id_field: null,
-//                     updates: [{
-//                         document: quillUpdate
-//                     }]
-//                 }
-//             ]);
-//             
-//         console.log(payload);
-//         sendMessage(payload, { is_utf8: true });
-//     }
     
     return true;
 }
