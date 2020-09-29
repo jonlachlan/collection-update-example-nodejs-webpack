@@ -2,13 +2,15 @@
  * Copyright (c) Jon Lachlan 2020
 */
 
-import parseWebsocketFrames from './parseWebsocketFrames.js';
+import parseWebsocketFramesFactory from './parseWebsocketFramesFactory.js';
 import AwaitQueue from './AwaitQueue.js';
 
 export default function getParsedWebsocketFramesFactory (
     socket /* <stream.Duplex> */
 ) {
 
+    const parseMore = parseWebsocketFramesFactory();
+    
     /*
      * Queue system
     */
@@ -26,7 +28,7 @@ export default function getParsedWebsocketFramesFactory (
             new Promise(
                 (resolve, reject) => {
                     resolve(
-                        parseWebsocketFrames(
+                        parseMore(
                             buffer
                         )
                     );
