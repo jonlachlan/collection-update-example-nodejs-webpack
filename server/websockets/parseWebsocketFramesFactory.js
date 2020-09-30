@@ -3,65 +3,37 @@
 */
 
 import uint2ArrayFromUint8Value from './uint2ArrayFromUint8Value.js';
+import PartialFrameStore from './PartialFrameStore.js';
 
 export default function parseWebsocketFramesFactory () {
     
-    function PartialFrame () {
-        const array = [];
-        
-        return {
-            set (partialFrame) {
-                if(array.length === 0) {
-                    array.push(partialFrame);
-                } else {
-                    throw new Error('partial frame is already set');
-                }
-            },
-            get () {
-                if(array.length) {
-                    return array.shift();
-                } else {
-                    throw new Error('partial frame has not been set');
-                }
-            },
-            isSet () {
-                return Boolean(array.length);
-            }
-        };
-    }
-    
-    const previousPartialFrame = new PartialFrame();
+    const previousPartialFrame = new PartialFrameStore();
     
     return async function* parseMore (
-        messagesUint8 /* <Uint8Array> or nodejs <Buffer> */
+        buffer /* <Uint8Array> or nodejs <Buffer> */
     ) { 
-    
+        let messagesUint8;
+        
         if(previousPartialFrame.isSet()) {
             const partialFrame = previousPartialFrame.get();
             if(partialFrame.rest) {
-                // partialFrame has no parsing saved, prepend to messagesUint8
-                (() => {
-                    const prepended = 
-                        new Uint8Array(
-                            partialFrame.rest.length 
-                            + 
-                            messagesUint8.length
-                        );
-                    prepended.set(
-                        partialFrame.rest
+                // partialFrame has no parsing saved, prepend to buffer
+                messagesUint8 = new Uint8Array(
+                        partialFrame.rest.length 
+                        + 
+                        buffer.length
                     );
-                    prepended.set(
-                        messagesUint8, 
-                        partialFrame.rest.length /* offset */
-                    );
-                    messagesUint8 = 
-                        prepended;
-                })();
-                
+                messagesUint8.set(
+                    partialFrame.rest
+                );
+                messagesUint8.set(
+                    buffer, 
+                    partialFrame.rest.length /* offset */
+                );
             } else {
                 // partialFrame has partially filled payload
                 if(
-                    messagesUint8.length < 
+                    buffer.length < 
                     (
                         partialFrame.payload.length - 
                         partialFrame.payload_length_filled
@@ -69,18 +41,18 @@ export default function parseWebsocketFramesFactory () {
                 ) {
                     // not enough data to complete partial frame
                     partialFrame.payload.set(
-                        messagesUint8,
+                        buffer,
                         partialFrame.payload_length_filled /* offset */
                     );
                     partialFrame.payload_length_filled += 
-                        messagesUint8.length;
+                        buffer.length;
                     previousPartialFrame.set(partialFrame);
                     // exit parseMore
                     return;
                 } else {
                     // complete the partial frame and yield
                     partialFrame.payload.set(
-                        messagesUint8.slice(
+                        buffer.slice(
                             0 /* start */,
                             (
                                 partialFrame.payload.length - 
@@ -119,16 +91,20 @@ export default function parseWebsocketFramesFactory () {
                     };
                     
                     messagesUint8 = 
-                        messagesUint8.slice(
+                        buffer.slice(
                             (
                                 partialFrame.payload.length - 
                                 partialFrame.payload_length_filled
                             ) /* begin */,  
-                            messagesUint8.length + 1 /* end */
+                            buffer.length + 1 /* end */
                         );
                 }
             }
+        } else {
+            messagesUint8 = buffer;
         }
+        
+        let currentFrameStartIndex = 0;
         
         while(true) {
     
@@ -170,10 +146,13 @@ export default function parseWebsocketFramesFactory () {
 
             // Check for partial frame
             if(
-                messagesUint8.length < 2
+                (messagesUint8.length - currentFrameStartIndex) < 2
             ) {
                 previousPartialFrame.set({
-                    rest: messagesUint8
+                    rest: messagesUint8.slice(
+                        currentFrameStartIndex /* start */,
+                        messagesUint8.length /* end */
+                    )
                 });
                 // exit parseMore
                 return;
@@ -182,8 +161,8 @@ export default function parseWebsocketFramesFactory () {
             // First 16 bits (2 bytes) are always part of base frame
         
             const first_16_bits = [
-                ...uint2ArrayFromUint8Value(messagesUint8[0]),
-                ...uint2ArrayFromUint8Value(messagesUint8[1])
+                ...uint2ArrayFromUint8Value(messagesUint8[currentFrameStartIndex + 0]),
+                ...uint2ArrayFromUint8Value(messagesUint8[currentFrameStartIndex + 1])
             ];
 
             /* is final frame */
@@ -246,8 +225,8 @@ export default function parseWebsocketFramesFactory () {
                         parseInt((
                             [
                                 // 16 bits (2 bytes) from index 16 to 31
-                                ...uint2ArrayFromUint8Value(messagesUint8[2]),
-                                ...uint2ArrayFromUint8Value(messagesUint8[3])
+                                ...uint2ArrayFromUint8Value(messagesUint8[currentFrameStartIndex + 2]),
+                                ...uint2ArrayFromUint8Value(messagesUint8[currentFrameStartIndex + 3])
                             ].join('')
                         ), 2 /* base */);
 
@@ -261,7 +240,9 @@ export default function parseWebsocketFramesFactory () {
 
                     // the first bit out of the 64 must be zero
                     const most_significant_bit_is_zero = 
-                        Boolean(!uint2ArrayFromUint8Value(messagesUint8[2])[0]);
+                        Boolean(
+                            !uint2ArrayFromUint8Value(messagesUint8[currentFrameStartIndex + 2])[0]
+                        );
 
                     if(!most_significant_bit_is_zero)
                         throw new Error(
@@ -275,28 +256,28 @@ export default function parseWebsocketFramesFactory () {
                             [
                                 // 64 bits (8 bytes) from index 16
                                 ...uint2ArrayFromUint8Value(
-                                    messagesUint8[2]
+                                    messagesUint8[currentFrameStartIndex + 2]
                                 ), // 1
                                 ...uint2ArrayFromUint8Value(
-                                    messagesUint8[3]
+                                    messagesUint8[currentFrameStartIndex + 3]
                                 ), // 2
                                 ...uint2ArrayFromUint8Value(
-                                    messagesUint8[4]
+                                    messagesUint8[currentFrameStartIndex + 4]
                                 ), // 3
                                 ...uint2ArrayFromUint8Value(
-                                    messagesUint8[5]
+                                    messagesUint8[currentFrameStartIndex + 5]
                                 ), // 4
                                 ...uint2ArrayFromUint8Value(
-                                    messagesUint8[6]
+                                    messagesUint8[currentFrameStartIndex + 6]
                                 ), // 5
                                 ...uint2ArrayFromUint8Value(
-                                    messagesUint8[7]
+                                    messagesUint8[currentFrameStartIndex + 7]
                                 ), // 6
                                 ...uint2ArrayFromUint8Value(
-                                    messagesUint8[8]
+                                    messagesUint8[currentFrameStartIndex + 8]
                                 ), // 7
                                 ...uint2ArrayFromUint8Value(
-                                    messagesUint8[9]
+                                    messagesUint8[currentFrameStartIndex + 9]
                                 ) // 8
                             ].join('')
                         ), 2 /* base */);
@@ -350,13 +331,17 @@ export default function parseWebsocketFramesFactory () {
             
             // Check for partial frame
             if(
-                messagesUint8.length < (payload_start_index + payload_length_value)
+                (messagesUint8.length - currentFrameStartIndex) < 
+                (payload_start_index + payload_length_value)
             ) {
                 if(
-                    messagesUint8.length < payload_start_index
+                    (messagesUint8.length - currentFrameStartIndex) < payload_start_index
                 ) {
                     previousPartialFrame.set({
-                        rest: messagesUint8
+                        rest: messagesUint8.slice(
+                            currentFrameStartIndex /* start */,
+                            messagesUint8.length /* end */
+                        )
                     });
                     // exit parseMore
                     return;
@@ -366,8 +351,8 @@ export default function parseWebsocketFramesFactory () {
                         new Uint8Array(payload_length_value);
                     payload.set(
                         messagesUint8.slice(
-                            payload_start_index,
-                            messagesUint8.length + 1
+                            currentFrameStartIndex + payload_start_index,
+                            messagesUint8.length
                         )
                     );
                     previousPartialFrame.set({
@@ -378,12 +363,12 @@ export default function parseWebsocketFramesFactory () {
                         opcode /* Integer <Number> from 0 to 15 */,
                         mask /* Integer <Number> from 0 to 1 */,
                         masking_key: messagesUint8.slice(
-                            masking_key_octets_start_index,
-                            masking_key_octets_start_index + 4
+                            currentFrameStartIndex + masking_key_octets_start_index,
+                            currentFrameStartIndex + masking_key_octets_start_index + 4
                         ) /* <Uint8Array> */,
                         payload /* <Uint8Array> */,
                         payload_length_filled: (
-                            messagesUint8.length - payload_start_index
+                            messagesUint8.length - currentFrameStartIndex - payload_start_index
                         ) /* Integer <Number> */,
                         rest: undefined /* undefined or Uint8Array */
                     });
@@ -429,9 +414,10 @@ export default function parseWebsocketFramesFactory () {
                 ) {
                     payload.fill(
                         (
-                            messagesUint8[i + payload_start_index]
+                            messagesUint8[currentFrameStartIndex + i + payload_start_index]
                             ^ /* XOR */
-                            messagesUint8[masking_key_octets_start_index + (i % 4)]
+                            messagesUint8[currentFrameStartIndex + masking_key_octets_start_index + 
+                                (i % 4)]
                         )
                         , i /* start position */
                         , i + 1 /* end position */
@@ -442,9 +428,9 @@ export default function parseWebsocketFramesFactory () {
 
                 payload.set(
                     messagesUint8.slice(
-                        payload_start_index /* begin */,
+                        currentFrameStartIndex + payload_start_index /* begin */,
                         (
-                            payload_start_index + payload_length_value
+                            currentFrameStartIndex + payload_start_index + payload_length_value
                         ) /* end */
                     )
                 );
@@ -464,17 +450,12 @@ export default function parseWebsocketFramesFactory () {
             // Check length for more frames and run again
         
             if(
-                messagesUint8.length > 
+                (messagesUint8.length - currentFrameStartIndex) > 
                 (
                     payload_start_index + payload_length_value
                 )
             ) {
-            
-                messagesUint8 = 
-                    messagesUint8.slice(
-                        payload_start_index + payload_length_value /* begin */,
-                        messagesUint8.length + 1 /* end */
-                    );
+                currentFrameStartIndex += (payload_start_index + payload_length_value);
             } else {
                 // exit while loop
                 break;

@@ -31,10 +31,15 @@ describe('getParsedWebsocketFramesFactory', function() {
         it(
             'uses the value of payload-len when payload-len is less than 126'
         , async function() {
+        
+            const parseMore = parseWebsocketFramesFactory();
+            
+            // without masking
+            
             const payload = new Uint8Array(125);
             payload.fill(1);
             
-            const bits = [
+            const bits1 = [
             /*  
                |F|R|R|R| opcode|M| payload-len |
                |I|S|S|S|       |A|             |
@@ -44,34 +49,32 @@ describe('getParsedWebsocketFramesFactory', function() {
                 1,0,0,0,0,0,1,0,0,1,1,1,1,1,0,1
             ];
             
-            const frames = new Uint8Array(127);
-            frames.fill(
+            const frames1 = new Uint8Array(127);
+            frames1.fill(
                 parseInt(
-                    bits.slice(0, 8).join(''), 
+                    bits1.slice(0, 8).join(''), 
                     2 /* base */
                 ),
                 0 /* start */,
                 1 /* end */
             );
-            frames.fill(
+            frames1.fill(
                 parseInt(
-                    bits.slice(8, 16).join(''), 
+                    bits1.slice(8, 16).join(''), 
                     2 /* base */
                 ),
                 1 /* start */,
                 2 /* end */
             );
-            frames.set(
+            frames1.set(
                 payload,
                 2 /* offset */
             );
             
-            const parseMore = parseWebsocketFramesFactory();
-        
-            let framesYielded = 0;
-
-            for await (const parsedFrame of parseMore(frames)) {
-                expect(parsedFrame).toEqual({
+            const iterator1 = parseMore(frames1);
+            const parsedFrame = await iterator1.next();
+            expect(parsedFrame).toEqual({
+                value: {
                     fin: 1,
                     rsv1: 0,
                     rsv2: 0,
@@ -79,19 +82,109 @@ describe('getParsedWebsocketFramesFactory', function() {
                     opcode: 2,
                     mask: 0,
                     payload
-                });
-                framesYielded++;
+                },
+                done: false
+            });
+            const return1 = await iterator1.next();
+            expect(return1).toEqual({
+                value: undefined,
+                done: true
+            });
+            
+            // with masking
+            
+            const maskingKey = new Uint8Array(4);
+            for(let i = 0; i < 4; i++) {
+                maskingKey.fill(
+                    Math.round(Math.random() * 255),
+                    i /* start */,
+                    i + 1 /* end */
+                );
             }
-            expect(framesYielded).toEqual(1);
+            
+            const maskedPayload = new Uint8Array(125);
+            maskedPayload.fill(1);
+            for(let i = 0; i < maskedPayload.length; i++) {
+                maskedPayload.fill(
+                    (
+                        maskedPayload[i]
+                        ^ /* XOR */
+                        maskingKey[(i % 4)]
+                    )
+                    , i /* start position */
+                    , i + 1 /* end position */
+                );
+            }
+            
+            const bits2 = [
+            /*  
+               |F|R|R|R| opcode|M| payload-len |
+               |I|S|S|S|       |A|             |
+               |N|V|V|V|       |S|             |
+               | |1|2|3|       |K|             |
+            */
+                1,0,0,0,0,0,1,0,1,1,1,1,1,1,0,1
+            ];
+            
+            const frames2 = new Uint8Array(131);
+            frames2.fill(
+                parseInt(
+                    bits2.slice(0, 8).join(''), 
+                    2 /* base */
+                ),
+                0 /* start */,
+                1 /* end */
+            );
+            frames2.fill(
+                parseInt(
+                    bits2.slice(8, 16).join(''), 
+                    2 /* base */
+                ),
+                1 /* start */,
+                2 /* end */
+            );
+            frames2.set(
+                maskingKey,
+                2 /* offset */
+            );
+            frames2.set(
+                maskedPayload,
+                6 /* offset */
+            );
+            
+            const iterator2 = parseMore(frames2);
+            const parsedFrame2 = await iterator2.next();
+            expect(parsedFrame2).toEqual({
+                value: {
+                    fin: 1,
+                    rsv1: 0,
+                    rsv2: 0,
+                    rsv3: 0,
+                    opcode: 2,
+                    mask: 1,
+                    payload: new Uint8Array(125).fill(1)
+                },
+                done: false
+            });
+            const return2 = await iterator2.next();
+            expect(return2).toEqual({
+                value: undefined,
+                done: true
+            });
+            
         });
         
         it(
             'reads extended-payload-length-16 when payload-len is 126'
         , async function() {
+        
+            const parseMore = parseWebsocketFramesFactory();
+
+            // without masking
             const payload = new Uint8Array(126);
             payload.fill(1);
             
-            const bits = [
+            const bits1 = [
             /*  
                |F|R|R|R| opcode|M| payload-len |   extended-payload-length-16  |
                |I|S|S|S|       |A|             |                               |
@@ -101,50 +194,48 @@ describe('getParsedWebsocketFramesFactory', function() {
                 1,0,0,0,0,0,1,0,0,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,0             
             ];
             
-            const frames = new Uint8Array(130);
-            frames.fill(
+            const frames1 = new Uint8Array(130);
+            frames1.fill(
                 parseInt(
-                    bits.slice(0, 8).join(''), 
+                    bits1.slice(0, 8).join(''), 
                     2 /* base */
                 ),
                 0 /* start */,
                 1 /* end */
             );
-            frames.fill(
+            frames1.fill(
                 parseInt(
-                    bits.slice(8, 16).join(''), 
+                    bits1.slice(8, 16).join(''), 
                     2 /* base */
                 ),
                 1 /* start */,
                 2 /* end */
             );
-            frames.fill(
+            frames1.fill(
                 parseInt(
-                    bits.slice(16, 24).join(''),
+                    bits1.slice(16, 24).join(''),
                     2 /* base */
                 ),
                 2 /* start */,
                 3 /* end */
             );
-            frames.fill(
+            frames1.fill(
                 parseInt(
-                    bits.slice(24, 32).join(''),
+                    bits1.slice(24, 32).join(''),
                     2 /* bits */
                 ),
                 3 /* start */,
                 4 /* end */
             );
-            frames.set(
+            frames1.set(
                 payload,
                 4 /* offset */
             );
-            
-            const parseMore = parseWebsocketFramesFactory();
-        
-            let framesYielded = 0;
 
-            for await (const parsedFrame of parseMore(frames)) {
-                expect(parsedFrame).toEqual({
+            const iterator1 = parseMore(frames1);
+            const parsedFrame1 = await iterator1.next();
+            expect(parsedFrame1).toEqual({
+                value: {
                     fin: 1,
                     rsv1: 0,
                     rsv2: 0,
@@ -152,19 +243,125 @@ describe('getParsedWebsocketFramesFactory', function() {
                     opcode: 2,
                     mask: 0,
                     payload
-                });
-                framesYielded++;
+                },
+                done: false
+            });
+            const return1 = await iterator1.next();
+            expect(return1).toEqual({
+                value: undefined,
+                done: true
+            });
+            
+            // with masking
+            
+            const maskingKey = new Uint8Array(4);
+            for(let i = 0; i < 4; i++) {
+                maskingKey.fill(
+                    Math.round(Math.random() * 255),
+                    i /* start */,
+                    i + 1 /* end */
+                );
             }
-            expect(framesYielded).toEqual(1);
+            
+            const maskedPayload = new Uint8Array(126);
+            maskedPayload.fill(1);
+            for(let i = 0; i < maskedPayload.length; i++) {
+                maskedPayload.fill(
+                    (
+                        maskedPayload[i]
+                        ^ /* XOR */
+                        maskingKey[(i % 4)]
+                    )
+                    , i /* start position */
+                    , i + 1 /* end position */
+                );
+            }
+            
+            const bits2 = [
+            /*  
+               |F|R|R|R| opcode|M| payload-len |   extended-payload-length-16  |
+               |I|S|S|S|       |A|             |                               |
+               |N|V|V|V|       |S|             |                               |
+               | |1|2|3|       |K|             |                               |
+            */
+                1,0,0,0,0,0,1,0,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,0             
+            ];
+            
+            const frames2 = new Uint8Array(134);
+            frames2.fill(
+                parseInt(
+                    bits2.slice(0, 8).join(''), 
+                    2 /* base */
+                ),
+                0 /* start */,
+                1 /* end */
+            );
+            frames2.fill(
+                parseInt(
+                    bits2.slice(8, 16).join(''), 
+                    2 /* base */
+                ),
+                1 /* start */,
+                2 /* end */
+            );
+            frames2.fill(
+                parseInt(
+                    bits2.slice(16, 24).join(''),
+                    2 /* base */
+                ),
+                2 /* start */,
+                3 /* end */
+            );
+            frames2.fill(
+                parseInt(
+                    bits2.slice(24, 32).join(''),
+                    2 /* bits */
+                ),
+                3 /* start */,
+                4 /* end */
+            );
+            frames2.set(
+                maskingKey,
+                4 /* offset */
+            );
+            frames2.set(
+                maskedPayload,
+                8 /* offset */
+            );
+
+            const iterator2 = parseMore(frames2);
+            const parsedFrame2 = await iterator2.next();
+            expect(parsedFrame2).toEqual({
+                value: {
+                    fin: 1,
+                    rsv1: 0,
+                    rsv2: 0,
+                    rsv3: 0,
+                    opcode: 2,
+                    mask: 1,
+                    payload: new Uint8Array(126).fill(1)
+                },
+                done: false
+            });
+            const return2 = await iterator2.next();
+            expect(return2).toEqual({
+                value: undefined,
+                done: true
+            });
         });
     
          it(
             'reads extended-payload-length-63 when payload-len is 127'
         , async function() {
+            
+            const parseMore = parseWebsocketFramesFactory();
+
+            // without masking
+            
             const payload = new Uint8Array(65536);
             payload.fill(1);
             
-            const bits = [
+            const bits1 = [
             /*  
                |F|R|R|R| opcode|M| payload-len |   extended-payload-length-63  |
                |I|S|S|S|       |A|             |                               |
@@ -185,98 +382,96 @@ describe('getParsedWebsocketFramesFactory', function() {
                 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0        
             ];
             
-            const frames = new Uint8Array(65546);
-            frames.fill(
+            const frames1 = new Uint8Array(65546);
+            frames1.fill(
                 parseInt(
-                    bits.slice(0, 8).join(''), 
+                    bits1.slice(0, 8).join(''), 
                     2 /* base */
                 ),
                 0 /* start */,
                 1 /* end */
             );
-            frames.fill(
+            frames1.fill(
                 parseInt(
-                    bits.slice(8, 16).join(''), 
+                    bits1.slice(8, 16).join(''), 
                     2 /* base */
                 ),
                 1 /* start */,
                 2 /* end */
             );
-            frames.fill(
+            frames1.fill(
                 parseInt(
-                    bits.slice(16, 24).join(''),
+                    bits1.slice(16, 24).join(''),
                     2 /* base */
                 ),
                 2 /* start */,
                 3 /* end */
             );
-            frames.fill(
+            frames1.fill(
                 parseInt(
-                    bits.slice(24, 32).join(''),
+                    bits1.slice(24, 32).join(''),
                     2 /* base */
                 ),
                 3 /* start */,
                 4 /* end */
             );
-            frames.fill(
+            frames1.fill(
                 parseInt(
-                    bits.slice(34, 40).join(''),
+                    bits1.slice(34, 40).join(''),
                     2 /* base */
                 ),
                 4 /* start */,
                 5 /* end */
             );
-            frames.fill(
+            frames1.fill(
                 parseInt(
-                    bits.slice(40, 48).join(''),
+                    bits1.slice(40, 48).join(''),
                     2 /* base */
                 ),
                 5 /* start */,
                 6 /* end */
             );
-            frames.fill(
+            frames1.fill(
                 parseInt(
-                    bits.slice(48, 56).join(''),
+                    bits1.slice(48, 56).join(''),
                     2 /* base */
                 ),
                 6 /* start */,
                 7 /* end */
             );
-            frames.fill(
+            frames1.fill(
                 parseInt(
-                    bits.slice(56, 64).join(''),
+                    bits1.slice(56, 64).join(''),
                     2 /* base */
                 ),
                 7 /* start */,
                 8 /* end */
             );
-            frames.fill(
+            frames1.fill(
                 parseInt(
-                    bits.slice(64, 72).join(''),
+                    bits1.slice(64, 72).join(''),
                     2 /* base */
                 ),
                 8 /* start */,
                 9 /* end */
             );
-            frames.fill(
+            frames1.fill(
                 parseInt(
-                    bits.slice(72, 80).join(''),
+                    bits1.slice(72, 80).join(''),
                     2 /* base */
                 ),
                 9 /* start */,
                 10 /* end */
             );
-            frames.set(
+            frames1.set(
                 payload,
                 10 /* offset */
             );
             
-            const parseMore = parseWebsocketFramesFactory();
-        
-            let framesYielded = 0;
-            
-            for await (const parsedFrame of parseMore(frames)) {
-                expect(parsedFrame).toEqual({
+            const iterator1 = parseMore(frames1);
+            const parsedFrame1 = await iterator1.next();
+            expect(parsedFrame1).toEqual({
+                value: {
                     fin: 1,
                     rsv1: 0,
                     rsv2: 0,
@@ -284,10 +479,170 @@ describe('getParsedWebsocketFramesFactory', function() {
                     opcode: 2,
                     mask: 0,
                     payload
-                });
-                framesYielded++;
+                },
+                done: false
+            });
+            const return1 = await iterator1.next();
+            expect(return1).toEqual({
+                value: undefined,
+                done: true
+            });
+            
+            // with masking
+            
+            const maskingKey = new Uint8Array(4);
+            for(let i = 0; i < 4; i++) {
+                maskingKey.fill(
+                    Math.round(Math.random() * 255),
+                    i /* start */,
+                    i + 1 /* end */
+                );
             }
-            expect(framesYielded).toEqual(1);
+            
+            const maskedPayload = new Uint8Array(65536);
+            maskedPayload.fill(1);
+            for(let i = 0; i < maskedPayload.length; i++) {
+                maskedPayload.fill(
+                    (
+                        maskedPayload[i]
+                        ^ /* XOR */
+                        maskingKey[(i % 4)]
+                    )
+                    , i /* start position */
+                    , i + 1 /* end position */
+                );
+            }
+            
+            const bits2 = [
+            /*  
+               |F|R|R|R| opcode|M| payload-len |   extended-payload-length-63  |
+               |I|S|S|S|       |A|             |                               |
+               |N|V|V|V|       |S|             |                               |
+               | |1|2|3|       |K|             |                               |
+               +-+-+-+-+-------+-+-------------+ - - - - - - - - - - - - - - - +
+            */
+                1,0,0,0,0,0,1,0,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+            /*
+               |              extended-payload-length-63 continued             |
+               + - - - - - - - - - - - - - - - +-------------------------------+
+            */
+                0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+            /*
+               |                               |
+               +-------------------------------+
+            */
+                0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0        
+            ];
+            
+            const frames2 = new Uint8Array(65550);
+            frames2.fill(
+                parseInt(
+                    bits2.slice(0, 8).join(''), 
+                    2 /* base */
+                ),
+                0 /* start */,
+                1 /* end */
+            );
+            frames2.fill(
+                parseInt(
+                    bits2.slice(8, 16).join(''), 
+                    2 /* base */
+                ),
+                1 /* start */,
+                2 /* end */
+            );
+            frames2.fill(
+                parseInt(
+                    bits2.slice(16, 24).join(''),
+                    2 /* base */
+                ),
+                2 /* start */,
+                3 /* end */
+            );
+            frames2.fill(
+                parseInt(
+                    bits2.slice(24, 32).join(''),
+                    2 /* base */
+                ),
+                3 /* start */,
+                4 /* end */
+            );
+            frames2.fill(
+                parseInt(
+                    bits2.slice(34, 40).join(''),
+                    2 /* base */
+                ),
+                4 /* start */,
+                5 /* end */
+            );
+            frames2.fill(
+                parseInt(
+                    bits2.slice(40, 48).join(''),
+                    2 /* base */
+                ),
+                5 /* start */,
+                6 /* end */
+            );
+            frames2.fill(
+                parseInt(
+                    bits2.slice(48, 56).join(''),
+                    2 /* base */
+                ),
+                6 /* start */,
+                7 /* end */
+            );
+            frames2.fill(
+                parseInt(
+                    bits2.slice(56, 64).join(''),
+                    2 /* base */
+                ),
+                7 /* start */,
+                8 /* end */
+            );
+            frames2.fill(
+                parseInt(
+                    bits2.slice(64, 72).join(''),
+                    2 /* base */
+                ),
+                8 /* start */,
+                9 /* end */
+            );
+            frames2.fill(
+                parseInt(
+                    bits2.slice(72, 80).join(''),
+                    2 /* base */
+                ),
+                9 /* start */,
+                10 /* end */
+            );
+            frames2.set(
+                maskingKey,
+                10 /* offset */
+            );
+            frames2.set(
+                maskedPayload,
+                14 /* offset */
+            );
+            
+            const iterator2 = parseMore(frames2);
+            const parsedFrame2 = await iterator2.next();
+            expect(parsedFrame2).toEqual({
+                value: {
+                    fin: 1,
+                    rsv1: 0,
+                    rsv2: 0,
+                    rsv3: 0,
+                    opcode: 2,
+                    mask: 1,
+                    payload: new Uint8Array(65536).fill(1)
+                },
+                done: false
+            });
+            const return2 = await iterator2.next();
+            expect(return2).toEqual({
+                value: undefined,
+                done: true
+            });
         });
     
         it(
