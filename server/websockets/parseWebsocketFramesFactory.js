@@ -54,44 +54,51 @@ export default function parseWebsocketFramesFactory () {
                     return;
                 } else {
                     // complete the partial frame and yield
-                    partialFrame.payload.set(
-                        buffer.slice(
-                            0 /* start */,
-                            (
-                                partialFrame.payload.length - 
-                                partialFrame.payload_length_filled
-                            ) /* end */
-                        ),
-                        partialFrame.payload_length_filled /* offset */
-                    );
                     
-                    if(partialFrame.mask === 1) {
-                        for (
-                            let i = 0;
-                            i < partialFrame.payload.length;
-                            i++
-                        ) {
-                            partialFrame.payload.fill(
-                                (
-                                    partialFrame.payload[i]
-                                    ^ /* XOR */
-                                    partialFrame.masking_key[(i % 4)]
-                                )
-                                , i /* start position */
-                                , i + 1 /* end position */
+                    
+                    yield new Promise (
+                        (resolve, reject) => {
+                        
+                            partialFrame.payload.set(
+                                buffer.slice(
+                                    0 /* start */,
+                                    (
+                                        partialFrame.payload.length - 
+                                        partialFrame.payload_length_filled
+                                    ) /* end */
+                                ),
+                                partialFrame.payload_length_filled /* offset */
                             );
-                        }
-                    } 
                     
-                    yield {
-                        fin: partialFrame.fin /* Integer <Number> from 0 to 1 */,
-                        rsv1: partialFrame.rsv1 /* Integer <Number> from 0 to 1 */,
-                        rsv2: partialFrame.rsv2 /* Integer <Number> from 0 to 1 */,
-                        rsv3: partialFrame.rsv3 /* Integer <Number> from 0 to 1 */,
-                        opcode: partialFrame.opcode /* Integer <Number> from 0 to 15 */,
-                        mask: partialFrame.mask /* Integer <Number> from 0 to 1 */,
-                        payload: partialFrame.payload /* <Uint8Array> */
-                    };
+                            if(partialFrame.mask === 1) {
+                                for (
+                                    let i = 0;
+                                    i < partialFrame.payload.length;
+                                    i++
+                                ) {
+                                    partialFrame.payload.fill(
+                                        (
+                                            partialFrame.payload[i]
+                                            ^ /* XOR */
+                                            partialFrame.masking_key[(i % 4)]
+                                        )
+                                        , i /* start position */
+                                        , i + 1 /* end position */
+                                    );
+                                }
+                            }
+                            
+                            resolve({
+                                fin: partialFrame.fin /* Integer <Number> from 0 to 1 */,
+                                rsv1: partialFrame.rsv1 /* Integer <Number> from 0 to 1 */,
+                                rsv2: partialFrame.rsv2 /* Integer <Number> from 0 to 1 */,
+                                rsv3: partialFrame.rsv3 /* Integer <Number> from 0 to 1 */,
+                                opcode: partialFrame.opcode /* Integer <Number> from 0 to 15 */,
+                                mask: partialFrame.mask /* Integer <Number> from 0 to 1 */,
+                                payload: partialFrame.payload /* <Uint8Array> */
+                            });
+                        }
+                    )
                     
                     messagesUint8 = 
                         buffer.slice(
@@ -378,77 +385,80 @@ export default function parseWebsocketFramesFactory () {
                 }
             }
             
-            function determinePayload ({
+            async function determinePayload ({
                 payload_length_value,
                 payload_start_index,
                 currentFrameStartIndex,
                 masking_key_octets_start_index
             }) {
-                
-                // Determine payload
+                return new Promise(
+                    (resolve, reject) => {
+                        // Determine payload
 
-                const payload = 
-                    new Uint8Array(payload_length_value);
+                        const payload = 
+                            new Uint8Array(payload_length_value);
 
-                if(mask === 1) {
+                        if(mask === 1) {
 
-                    /*
-                     * Demasking per Section 5.3 of the specification: 
+                            /*
+                             * Demasking per Section 5.3 of the specification: 
 
-                    --------------------------- as published in RFC 6455 ---------------------------
-
-
-                       To convert masked data into unmasked data, or vice versa, the following 
-                       algorithm is applied.  The same algorithm applies regardless of the 
-                       direction of the translation, e.g., the same steps are applied to mask the 
-                       data as to unmask the data.
-
-                       Octet i of the transformed data ("transformed-octet-i") is the XOR of octet 
-                       i of the original data ("original-octet-i") with octet at index i modulo 4 
-                       of the masking key ("masking-key-octet-j"):
-
-                         j                   = i MOD 4
-                         transformed-octet-i = original-octet-i XOR masking-key-octet-j
+                            --------------------------- as published in RFC 6455 ---------------------------
 
 
-                    ------------------------------- end of quotation -------------------------------
+                               To convert masked data into unmasked data, or vice versa, the following 
+                               algorithm is applied.  The same algorithm applies regardless of the 
+                               direction of the translation, e.g., the same steps are applied to mask the 
+                               data as to unmask the data.
 
-                    */
+                               Octet i of the transformed data ("transformed-octet-i") is the XOR of octet 
+                               i of the original data ("original-octet-i") with octet at index i modulo 4 
+                               of the masking key ("masking-key-octet-j"):
 
-                    for (
-                        let i = 0;
-                        i < payload_length_value;
-                        i++
-                    ) {
-                        payload.fill(
-                            (
-                                messagesUint8[currentFrameStartIndex + i + payload_start_index]
-                                ^ /* XOR */
-                                messagesUint8[currentFrameStartIndex + masking_key_octets_start_index + 
-                                    (i % 4)]
-                            )
-                            , i /* start position */
-                            , i + 1 /* end position */
-                        );
-                    } 
-                } else {
-                    // no masking
+                                 j                   = i MOD 4
+                                 transformed-octet-i = original-octet-i XOR masking-key-octet-j
 
-                    payload.set(
-                        messagesUint8.slice(
-                            currentFrameStartIndex + payload_start_index /* begin */,
-                            (
-                                currentFrameStartIndex + payload_start_index + payload_length_value
-                            ) /* end */
-                        )
-                    );
-                }
 
-                return payload;
+                            ------------------------------- end of quotation -------------------------------
+
+                            */
+
+                            for (
+                                let i = 0;
+                                i < payload_length_value;
+                                i++
+                            ) {
+                                payload.fill(
+                                    (
+                                        messagesUint8[currentFrameStartIndex + i + payload_start_index]
+                                        ^ /* XOR */
+                                        messagesUint8[currentFrameStartIndex + masking_key_octets_start_index + 
+                                            (i % 4)]
+                                    )
+                                    , i /* start position */
+                                    , i + 1 /* end position */
+                                );
+                            } 
+                        } else {
+                            // no masking
+
+                            payload.set(
+                                messagesUint8.slice(
+                                    currentFrameStartIndex + payload_start_index /* begin */,
+                                    (
+                                        currentFrameStartIndex + payload_start_index + payload_length_value
+                                    ) /* end */
+                                )
+                            );
+                        }
+
+                        resolve(payload);
+                    }
+                )
             }
             
             yield new Promise(
-                (resolve, reject) => {
+                async (resolve, reject) => {
                     resolve({
                         fin /* Integer <Number> from 0 to 1 */,
                         rsv1 /* Integer <Number> from 0 to 1 */,
@@ -456,7 +466,7 @@ export default function parseWebsocketFramesFactory () {
                         rsv3 /* Integer <Number> from 0 to 1 */,
                         opcode /* Integer <Number> from 0 to 15 */,
                         mask /* Integer <Number> from 0 to 1 */,
-                        payload: determinePayload({
+                        payload: await determinePayload({
                             payload_length_value,
                             payload_start_index,
                             currentFrameStartIndex,
