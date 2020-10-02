@@ -9,7 +9,8 @@ export default function getParsedWebsocketFramesFactory (
     socket /* <stream.Duplex> */
 ) {
 
-    const parseMore = parseWebsocketFramesFactory();
+    const parseMore = 
+        parseWebsocketFramesFactory();
     
     /*
      * Queue system
@@ -21,30 +22,33 @@ export default function getParsedWebsocketFramesFactory (
     */
     const parserQueue = 
         new AwaitQueue();
+        
+    const bufferQueue =
+        new AwaitQueue();
 
     function pushToQueue (buffer) {
-        
-        parserQueue.push(
-            new Promise(
-                (resolve, reject) => {
-                    resolve(
-                        parseMore(
-                            buffer
-                        )
-                    );
-                }
-            )
-        );
+        bufferQueue.push(buffer);
     }
+    
+    async function runParser() {
+        while(true) {
+            parserQueue.push(
+                parseMore(await bufferQueue.shift())
+            )
+        }
+    }
+    runParser();    
 
     // Hook-in to the nodejs event emitter
     socket.on(
-        'data', 
-        pushToQueue
+        'readable', 
+        function() {
+            pushToQueue(this.read());
+        }
     );
     
     return async function* () {
-
+        
         while(true) {
             
             const frames = 

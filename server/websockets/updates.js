@@ -27,7 +27,7 @@ export default async function (
     (async () => {
         for await (
             const { 
-                payload /* <Uint8Array> */,
+                payload /* <Promise> <Uint8Array> */,
                 opcode /* Integer <Number> from 0 to 15 */, 
                 rsv1 /* Integer <Number> from 0 to 1 */, 
                 rsv2 /* Integer <Number> from 0 to 1 */, 
@@ -112,10 +112,10 @@ export default async function (
 //     sendMessage(
 //         largePayload
 //     );
-//     
-//     sendMessage(
-//         anotherLargePayload
-//     );
+    
+    sendMessage(
+        anotherLargePayload
+    );
     
     return true;
 }
