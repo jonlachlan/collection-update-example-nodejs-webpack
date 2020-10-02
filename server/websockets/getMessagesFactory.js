@@ -4,6 +4,7 @@
 
 import getParsedWebsocketFramesFactory from './getParsedWebsocketFramesFactory.js';
 import sendMessageFactory from './sendMessageFactory.js';
+import FragmentedMessageStore from './FragmentedMessageStore.js'
 
 /* 
  * Handles Ping messages by sending a compliant Pong.
@@ -23,18 +24,8 @@ export default function getMessagesFactory (
             socket
         );
     
-    let fragmentedPayload = 
-        new Uint8Array();
-    let isFragmented = 
-        undefined;
-    let fragmentedMessageOpcode = 
-        undefined;
-    let fragmentedMessageRsv1 = 
-        undefined;
-    let fragmentedMessageRsv2 = 
-        undefined;
-    let fragmentedMessageRsv3 = 
-        undefined;
+    const fragmentedMessage = 
+        new FragmentedMessageStore();
     
     function addToFragmentedPayload(
         payloadFragment /* <Uint8Array> */
@@ -154,32 +145,26 @@ export default function getMessagesFactory (
                 opcode !== 0x0
             ) {
                 // First frame for fragmented message
-                isFragmented = 
-                    true;
-                addToFragmentedPayload(
+                fragmentedMessage.start({
+                    rsv1,
+                    rsv2,
+                    rsv3,
+                    opcode,
                     payload
-                );
-                fragmentedMessageOpcode = 
-                    opcode;
-                fragmentedMessageRsv1 = 
-                    rsv1;
-                fragmentedMessageRsv2 = 
-                    rsv2;
-                fragmentedMessageRsv3 = 
-                    rsv3;
+                });
             } else if(
-                isFragmented 
+                fragmentedMessage.isStarted() 
                 && 
                 opcode === 0x0 
                 && 
                 fin === 0
             ) {
                 // Continuation frame for fragmented message
-                addToFragmentedPayload(
+                fragmentedMessage.addPayload(
                     payload
                 );
             } else if(
-                isFragmented 
+                fragmentedMessage.isStarted()  
                 && 
                 opcode === 0x0 
                 && 
@@ -189,30 +174,7 @@ export default function getMessagesFactory (
                 addToFragmentedPayload(
                     payload
                 );
-                yield {
-                    payload: fragmentedPayload
-                        /* <Uint8Array> */,
-                    opcode: fragmentedMessageOpcode 
-                        /* Integer <Number> from 0 to 15 */,
-                    rsv1: fragmentedMessageRsv1 
-                        /* Integer <Number> from 0 to 1 */,
-                    rsv2: fragmentedMessageRsv2 
-                        /* Integer <Number> from 0 to 1 */,
-                    rsv3: fragmentedMessageRsv3 
-                        /* Integer <Number> from 0 to 1 */
-                };
-                fragmentedPayload = 
-                    new Uint8Array();
-                isFragmented = 
-                    undefined;
-                fragmentedMessageOpcode = 
-                    undefined;
-                fragmentedMessageRsv1 = 
-                    undefined;
-                fragmentedMessageRsv2 = 
-                    undefined;
-                fragmentedMessageRsv3 = 
-                    undefined;
+                yield fragmentedMessage.finish();
             } else {
                 /* 
                  * Unfragmented message with an opcode that is not text, 
