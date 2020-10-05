@@ -26,27 +26,6 @@ export default function getMessagesFactory (
     
     const fragmentedMessage = 
         new FragmentedMessageStore();
-    
-    function addToFragmentedPayload(
-        payloadFragment /* <Uint8Array> */
-    ) {
-    
-        const appendedPayload = 
-            new Uint8Array(
-                fragmentedPayload.length 
-                + 
-                payloadFragment.length
-            );
-        appendedPayload.set(
-            fragmentedPayload
-        );
-        appendedPayload.set(
-            payloadFragment, 
-            fragmentedPayload.length /* offset */
-        );
-        fragmentedPayload = 
-            appendedPayload;
-    }
         
     return async function* () {
         
@@ -171,7 +150,7 @@ export default function getMessagesFactory (
                 fin === 1
             ) {
                 // Final frame for fragmented message
-                addToFragmentedPayload(
+                fragmentedMessage.addPayload(
                     payload
                 );
                 yield fragmentedMessage.finish();
