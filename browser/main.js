@@ -16,6 +16,7 @@
 
     updatesWebsocket.onclose = function(event) {
         console.log('close');
+        console.log(event);
     }
     updatesWebsocket.onopen = function(event) {
         console.log('open');
