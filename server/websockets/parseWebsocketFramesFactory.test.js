@@ -21,6 +21,23 @@ describe('getParsedWebsocketFramesFactory', function() {
     
     describe('returned async generator \`parseMore\`', function () {
 
+        it(
+            'returns when \`buffer\` is null'
+        , async function () {
+        
+            const parseMore = 
+                parseWebsocketFramesFactory();
+
+            const iterator = 
+                parseMore(null);
+            const return1 = 
+                await iterator.next();
+            expect(return1).toEqual({
+                value: undefined,
+                done: true
+            });
+        });
+
         it.skip(
             'throws an error when \`messagesUint8\` is not an instanceof ' + 
             '<Uint8Array> or <Buffer>'

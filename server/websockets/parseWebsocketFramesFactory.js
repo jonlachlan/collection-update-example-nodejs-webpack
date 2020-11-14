@@ -12,6 +12,8 @@ export default function parseWebsocketFramesFactory () {
     return async function* parseMore (
         buffer /* <Uint8Array> or nodejs <Buffer> or null */
     ) { 
+    
+        // read() from socket.Duplex can return null
         if(buffer === null)
             return;
             

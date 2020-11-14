@@ -6,16 +6,88 @@ export default function prepareWebsocketFrame (
     payload /* <Uint8Array> */,
     /* Optional options object */
     {
-        isUtf8 /* <Boolean> */,
+        isUtf8 = false /* <Boolean> */,
         
         /* For advanced usage */
         opcode /* Integer <Number> between 0 and 15 */,
-        fin /* Integer <Number> between 0 and 1 */,
-        rsv1 /* Integer <Number> between 0 and 1 */,
-        rsv2 /* Integer <Number> between 0 and 1 */,
-        rsv3 /* Integer <Number> between 0 and 1 */
-    } = { isUtf8: false }
+        fin = 1 /* Integer <Number> between 0 and 1 */,
+        rsv1 = 0 /* Integer <Number> between 0 and 1 */,
+        rsv2 = 0 /* Integer <Number> between 0 and 1 */,
+        rsv3 = 0 /* Integer <Number> between 0 and 1 */
+    } = {}
 ) {
+
+    if(!(payload instanceof Uint8Array))
+        throw new Error(
+            'payload not an instance of Uint8Array'
+        );
+        
+    if(opcode !== undefined && 
+        (
+            typeof(opcode) !== 'number'
+            ||
+            (opcode < 0x0 || opcode > 0xF)
+            ||
+            (opcode.toFixed() < opcode)
+            ||
+            (opcode.toFixed() > opcode)
+        )
+    )
+        throw new Error(
+            'opcode not an integer between 0 and 15'
+        );
+    
+    if(
+        typeof(fin) !== 'number'
+        ||
+        (fin < 0 || fin > 1)
+        ||
+        (fin.toFixed() < fin)
+        || 
+        (fin.toFixed() > fin)
+    ) 
+        throw new Error(
+            'fin is not an integer between 0 and 1'
+        );
+        
+    if(
+        typeof(rsv1) !== 'number'
+        ||
+        (rsv1 < 0 || rsv1 > 1)
+        ||
+        (rsv1.toFixed() < rsv1)
+        || 
+        (rsv1.toFixed() > rsv1)
+    ) 
+        throw new Error(
+            'rsv1 is not an integer between 0 and 1'
+        ); 
+        
+   if(
+        typeof(rsv2) !== 'number'
+        ||
+        (rsv2 < 0 || rsv2 > 1)
+        ||
+        (rsv2.toFixed() < rsv2)
+        || 
+        (rsv2.toFixed() > rsv2)
+    ) 
+        throw new Error(
+            'rsv2 is not an integer between 0 and 1'
+        ); 
+    
+    if(
+        typeof(rsv3) !== 'number'
+        ||
+        (rsv3 < 0 || rsv3 > 1)
+        ||
+        (rsv3.toFixed() < rsv3)
+        || 
+        (rsv3.toFixed() > rsv3)
+    ) 
+        throw new Error(
+            'rsv3 is not an integer between 0 and 1'
+        ); 
 
     let extended_payload_length_bytes;
     let payload_len;
@@ -41,46 +113,36 @@ export default function prepareWebsocketFrame (
     // Set first byte (8 bits)
     
     // First four (4) bits of first byte
-    if(fin || rsv1 || rsv2 || rsv3) {
-        // All are undefined by default
-        preparedMessage.fill(
-            (
-                (fin ? 1 : 0) * Math.pow(2, 7)
-                +
-                (rsv1 ? 1 : 0) * Math.pow(2, 6)
-                +
-                (rsv2 ? 1 : 0) * Math.pow(2, 5)
-                +
-                (rsv3 ? 1 : 0) * Math.pow(2, 4)
-            ),
-            0 /* start position */, 
-            1 /* end position */
-        );
-    } else {
-        // final frame, no reserved bits
-        preparedMessage.fill(
-            128, 
-            0 /* start position */, 
-            1 /* end position */
-        );
-    }
+    preparedMessage.fill(
+        (
+            (fin) * Math.pow(2, 7)
+            +
+            (rsv1) * Math.pow(2, 6)
+            +
+            (rsv2) * Math.pow(2, 5)
+            +
+            (rsv3) * Math.pow(2, 4)
+        ),
+        0 /* start position */, 
+        1 /* end position */
+    );
     
     // Second four (4) bits of first byte
-    if(opcode) {
+    if(opcode !== undefined) {
         preparedMessage.fill(
             preparedMessage[0] + opcode, 
             0 /* start position */, 
             1 /* end position */
         );
     } else if(isUtf8) {
-        // opcode is text frame
+        // set opcode to 1 (text frame), unless another opcode is provided
         preparedMessage.fill(
             preparedMessage[0] + 1, 
             0 /* start position */, 
             1 /* end position */
-        );        
+        );
     } else {
-        // opcode is binary frame
+        // set opcode to 2 by default (binary frame)
         preparedMessage.fill(
             preparedMessage[0] + 2, 
             0 /* start position */, 
