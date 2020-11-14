@@ -21,6 +21,7 @@ export default function parseWebsocketFramesFactory () {
             const partialFrame = previousPartialFrame.get();
             if(partialFrame.rest) {
                 // partialFrame has no parsing saved, prepend to buffer
+                
                 messagesUint8 = new Uint8Array(
                         partialFrame.rest.length 
                         + 
@@ -35,6 +36,7 @@ export default function parseWebsocketFramesFactory () {
                 );
             } else {
                 // partialFrame has partially filled payload
+                
                 if(
                     buffer.length < 
                     (
@@ -43,6 +45,7 @@ export default function parseWebsocketFramesFactory () {
                     )
                 ) {
                     // not enough data to complete partial frame
+                    
                     partialFrame.payload.set(
                         buffer,
                         partialFrame.payload_length_filled /* offset */
@@ -54,7 +57,6 @@ export default function parseWebsocketFramesFactory () {
                     return;
                 } else {
                     // complete the partial frame and yield
-                    
                     
                     yield new Promise (
                         (resolve, reject) => {
@@ -98,7 +100,7 @@ export default function parseWebsocketFramesFactory () {
                                 payload: partialFrame.payload /* <Uint8Array> */
                             });
                         }
-                    )
+                    );
                     
                     messagesUint8 = 
                         buffer.slice(
@@ -169,12 +171,12 @@ export default function parseWebsocketFramesFactory () {
             }
             
             // First 16 bits (2 bytes) are always part of base frame
-        
+            
             const first_16_bits = [
                 ...uint2ArrayFromUint8Value(messagesUint8[currentFrameStartIndex + 0]),
                 ...uint2ArrayFromUint8Value(messagesUint8[currentFrameStartIndex + 1])
             ];
-
+            
             /* is final frame */
             const fin = 
                 first_16_bits[0];

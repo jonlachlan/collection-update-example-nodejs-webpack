@@ -11,18 +11,22 @@ describe('FragmentedMessageStore', function () {
         'returns it on finish()'
     , function () {
     
-        const store = new FragmentedMessageStore();
-        const initialFrame = {
-            rsv1: 0,
-            rsv2: 0,
-            rsv3: 0,
-            opcode: 0x2,
-            payload: new Uint8Array(8).fill(1)
-        };
+        const store = 
+            new FragmentedMessageStore();
+        const initialFrame = 
+            {
+                rsv1: 0,
+                rsv2: 0,
+                rsv3: 0,
+                opcode: 0x2,
+                mask: 0,
+                payload: new Uint8Array(8).fill(1)
+            };
         store.start(
             initialFrame
         );
-        const message = store.finish();
+        const message = 
+            store.finish();
         expect(message).toEqual(
             initialFrame
         );
@@ -499,7 +503,8 @@ describe('FragmentedMessageStore', function () {
         'appends payloads with addPayload()'
     , function () {
     
-        const store = new FragmentedMessageStore();
+        const store = 
+            new FragmentedMessageStore();
         const initialFrame = {
             rsv1: 0,
             rsv2: 0,
@@ -517,7 +522,8 @@ describe('FragmentedMessageStore', function () {
         store.addPayload(
             new Uint8Array(12).fill(3)
         );
-        const message = store.finish();
+        const message = 
+            store.finish();
         expect(message).toEqual({
             ...initialFrame,
             payload: 
@@ -532,7 +538,8 @@ describe('FragmentedMessageStore', function () {
         'indicates a fragmented message has been started with isStarted()'    
     , function () {
     
-        const store = new FragmentedMessageStore();
+        const store = 
+            new FragmentedMessageStore();
         expect(store.isStarted()).toEqual(
             false
         );
@@ -550,7 +557,8 @@ describe('FragmentedMessageStore', function () {
         expect(store.isStarted()).toEqual(
             true
         );
-        const message = store.finish();
+        const message = 
+            store.finish();
         expect(message).toEqual(
             initialFrame
         );
@@ -573,7 +581,9 @@ describe('FragmentedMessageStore', function () {
     it(
         'throws an error if start() is called again before finish() is called'
     , function () {
-        const store = new FragmentedMessageStore();
+    
+        const store = 
+            new FragmentedMessageStore();
         const initialFrame = {
             rsv1: 0,
             rsv2: 0,
@@ -595,7 +605,8 @@ describe('FragmentedMessageStore', function () {
                 payload: new Uint8Array(10).fill(2)
             });
         } catch (err) {
-            errorMessage = err.message;
+            errorMessage = 
+                err.message;
         }
         expect(errorMessage).toEqual(
             'Fragmented message already started'
@@ -605,7 +616,9 @@ describe('FragmentedMessageStore', function () {
     it(
         'throws an error if finish() is called before start() is called'
     , function () {
-               const store = new FragmentedMessageStore();
+    
+        const store = 
+            new FragmentedMessageStore();
         const initialFrame = {
             rsv1: 0,
             rsv2: 0,
@@ -619,22 +632,27 @@ describe('FragmentedMessageStore', function () {
             store.start(
                 initialFrame
             );
-            const message1 = store.finish();
+            const message1 = 
+                store.finish();
             expect(message1).toEqual(
                 initialFrame
             );
-            const message2 = store.finish();
+            const message2 = 
+                store.finish();
         } catch (err) {
-            errorMessage1 = err.message;
+            errorMessage1 = 
+                err.message;
         }
         expect(errorMessage1).toEqual(
             'No fragmented message'
         );
         let errorMessage2;
         try {
-            const message3 = store.finish();
+            const message3 = 
+                store.finish();
         } catch (err) {
-            errorMessage2 = err.message;
+            errorMessage2 = 
+                err.message;
         }
         expect(errorMessage2).toEqual(
             'No fragmented message'
