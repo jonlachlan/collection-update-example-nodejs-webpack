@@ -23,38 +23,36 @@ export default function getParsedWebsocketFramesFactory (
     const parserQueue = 
         new AwaitQueue();
         
-    const bufferQueue =
+    const readableQueue =
         new AwaitQueue();
-
-    function pushToQueue (buffer) {
-        bufferQueue.push(buffer);
-    }
     
-    async function runParser() {
+    (async function () {
         while(true) {
             parserQueue.push(
-                parseMore(await bufferQueue.shift())
-            )
+                parseMore(
+                    (
+                        await readableQueue.shift()
+                    )()
+                )
+            );
         }
-    }
-    runParser();    
+    })();
 
     // Hook-in to the nodejs event emitter
     socket.on(
         'readable', 
         function() {
-            pushToQueue(this.read());
+            readableQueue.push(
+                () => this.read()
+            );
         }
     );
     
     return async function* () {
         
         while(true) {
-            
-            const frames = 
-                await parserQueue.shift();
                 
-            for await (const frame of frames) {
+            for await (const frame of (await parserQueue.shift())) {
                 yield frame;
             }            
         }
