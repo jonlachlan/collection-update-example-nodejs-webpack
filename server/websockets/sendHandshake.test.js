@@ -35,8 +35,4 @@ describe('sendHandshake', function () {
         'successfully establishes any Sec-Websocket-Extension with a client'
     );
     
-    it.todo(
-        'throws an error if secure is set and the protocol is not wss://'
-    );
-    
 });
