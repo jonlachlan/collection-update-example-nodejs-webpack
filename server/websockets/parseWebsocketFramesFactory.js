@@ -7,7 +7,8 @@ import PartialFrameStore from './PartialFrameStore.js';
 
 export default function parseWebsocketFramesFactory () {
     
-    const previousPartialFrame = new PartialFrameStore();
+    const previousPartialFrame = 
+        new PartialFrameStore();
     
     return async function* parseMore (
         buffer /* <Uint8Array> or nodejs <Buffer> or null */
@@ -34,11 +35,13 @@ export default function parseWebsocketFramesFactory () {
         let messagesUint8;
         
         if(previousPartialFrame.isSet()) {
-            const partialFrame = previousPartialFrame.get();
+            const partialFrame = 
+                previousPartialFrame.get();
             if(partialFrame.rest) {
                 // partialFrame has no parsing saved, prepend to buffer
                 
-                messagesUint8 = new Uint8Array(
+                messagesUint8 = 
+                    new Uint8Array(
                         partialFrame.rest.length 
                         + 
                         buffer.length
@@ -129,10 +132,12 @@ export default function parseWebsocketFramesFactory () {
                 }
             }
         } else {
-            messagesUint8 = buffer;
+            messagesUint8 = 
+                buffer;
         }
         
-        let currentFrameStartIndex = 0;
+        let currentFrameStartIndex = 
+            0;
         
         while(true) {
     
@@ -188,10 +193,11 @@ export default function parseWebsocketFramesFactory () {
             
             // First 16 bits (2 bytes) are always part of base frame
             
-            const first_16_bits = [
-                ...uint2ArrayFromUint8Value(messagesUint8[currentFrameStartIndex + 0]),
-                ...uint2ArrayFromUint8Value(messagesUint8[currentFrameStartIndex + 1])
-            ];
+            const first_16_bits = 
+                [
+                    ...uint2ArrayFromUint8Value(messagesUint8[currentFrameStartIndex + 0]),
+                    ...uint2ArrayFromUint8Value(messagesUint8[currentFrameStartIndex + 1])
+                ];
             
             /* is final frame */
             const fin = 
@@ -503,7 +509,8 @@ export default function parseWebsocketFramesFactory () {
                     payload_start_index + payload_length_value
                 )
             ) {
-                currentFrameStartIndex += (payload_start_index + payload_length_value);
+                currentFrameStartIndex += 
+                    (payload_start_index + payload_length_value);
             } else {
                 // exit while loop
                 break;

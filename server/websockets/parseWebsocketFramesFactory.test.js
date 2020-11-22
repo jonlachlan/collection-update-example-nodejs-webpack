@@ -10,7 +10,8 @@ describe('getParsedWebsocketFramesFactory', function() {
     it(
         'returns an async generator \`parseMore\`'
     , async function () {
-        const parseMore = parseWebsocketFramesFactory();
+        const parseMore = 
+            parseWebsocketFramesFactory();
         
         // should run if parseMore is an async generator
         for await (const frame of parseMore(new Uint8Array(0))) {

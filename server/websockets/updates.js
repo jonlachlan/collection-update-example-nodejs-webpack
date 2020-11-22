@@ -10,7 +10,7 @@ import prepareCloseFramePayload from './prepareCloseFramePayload.js';
 
 export default async function (
     request /* <http.IncomingMessage> */, 
-    socket /* <stream.Duplex> */ , 
+    socket /* <stream.Duplex> */, 
     head /* <Buffer> websocket header */
 ) {
 

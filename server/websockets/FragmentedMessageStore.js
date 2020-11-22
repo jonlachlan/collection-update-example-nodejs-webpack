@@ -3,8 +3,12 @@
 */
 
 export default function FragmentedMessageStore () {
-    const messageStore = [];
-    const payloads = [];
+    
+    const messageStore = 
+        [];
+    const payloads = 
+        [];
+        
     return new class {
         
         start ({
