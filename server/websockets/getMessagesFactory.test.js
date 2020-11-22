@@ -2,6 +2,7 @@
  * Copyright (c) Jon Lachlan 2020
 */
 
+import stream from 'stream';
 import { EventEmitter } from 'events';
 import getMessagesFactory from './getMessagesFactory.js';
 import prepareWebsocketFrame from './prepareWebsocketFrame.js';
@@ -10,14 +11,10 @@ describe(
     'getMessagesFactory'
 , function() {
 
-    it.skip(
+    it(
         'throws an error if \`socket\` is not an instance of stream.Duplex'
     , function () {
         
-        /*
-         * Not implemented in order to run other tests
-        */ 
-                
         let errorsCount = 
             0;
         try {
@@ -34,7 +31,12 @@ describe(
             0;
         
         const socket = 
-            new stream.Duplex();
+            new class extends stream.Duplex {
+                
+                _read () {
+                
+                }
+            };
         
         try {
             const getMessages2 = 
@@ -59,19 +61,21 @@ describe(
         const writes = 
             [];
 
-        class DuplexMock extends EventEmitter {
-        
-            read () {
-                return reads.shift();
-            }
-            
-            write (frames) {
-                writes.push(frames);
-            }
-        }
-
         const socket = 
-            new DuplexMock();
+            new class extends stream.Duplex {
+        
+                _read () {
+            
+                }
+            
+                read () {
+                    return reads.shift();
+                }
+            
+                write (frames) {
+                    writes.push(frames);
+                }
+            }
         const getMessages = 
             getMessagesFactory(socket);
         
@@ -118,19 +122,21 @@ describe(
                 frame
             );
 
-            class DuplexMock extends EventEmitter {
-        
-                read () {
-                    return reads.shift();
-                }
-            
-                write (frames) {
-                    writes.push(frames);
-                }
-            }
-
             const socket = 
-                new DuplexMock();
+                new class extends stream.Duplex {
+        
+                    _read () {
+            
+                    }
+            
+                    read () {
+                        return reads.shift();
+                    }
+            
+                    write (frames) {
+                        writes.push(frames);
+                    }
+                }
             const getMessages = 
                 getMessagesFactory(socket);
         
@@ -235,19 +241,21 @@ describe(
                 frames1
             );
 
-            class DuplexMock extends EventEmitter {
-        
-                read () {
-                    return reads.shift();
-                }
-            
-                write (frames) {
-                    writes.push(frames);
-                }
-            }
-
             const socket = 
-                new DuplexMock();
+                new class extends stream.Duplex {
+        
+                    _read () {
+            
+                    }
+            
+                    read () {
+                        return reads.shift();
+                    }
+            
+                    write (frames) {
+                        writes.push(frames);
+                    }
+                }
             const getMessages = 
                 getMessagesFactory(socket);
         
@@ -459,19 +467,21 @@ describe(
                 frames1
             );
 
-            class DuplexMock extends EventEmitter {
-        
-                read () {
-                    return reads.shift();
-                }
-            
-                write (frames) {
-                    writes.push(frames);
-                }
-            }
-
             const socket = 
-                new DuplexMock();
+                new class extends stream.Duplex {
+        
+                    _read () {
+            
+                    }
+            
+                    read () {
+                        return reads.shift();
+                    }
+            
+                    write (frames) {
+                        writes.push(frames);
+                    }
+                }
             const getMessages = 
                 getMessagesFactory(socket);
         

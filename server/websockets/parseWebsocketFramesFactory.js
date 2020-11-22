@@ -11,12 +11,26 @@ export default function parseWebsocketFramesFactory () {
     
     return async function* parseMore (
         buffer /* <Uint8Array> or nodejs <Buffer> or null */
-    ) { 
-    
-        // read() from socket.Duplex can return null
-        if(buffer === null)
+    ) {
+        
+        if(buffer === null) {
+            // read() from socket.Duplex can return null
             return;
-            
+        } 
+        /*
+         * not implemented
+         
+         else if(
+            (buffer instanceof Uint8Array) !== true
+        ) {
+            throw new Error(
+                'buffer argument is not an instance of Uint8Array or null'
+            );
+        }
+        
+        * ^
+        */
+        
         let messagesUint8;
         
         if(previousPartialFrame.isSet()) {

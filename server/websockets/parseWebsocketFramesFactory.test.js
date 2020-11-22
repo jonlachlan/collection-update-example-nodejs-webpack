@@ -38,11 +38,32 @@ describe('getParsedWebsocketFramesFactory', function() {
             });
         });
 
+        // not implemented
         it.skip(
             'throws an error when \`messagesUint8\` is not an instanceof ' + 
             '<Uint8Array> or <Buffer>'
-        , function () {
-            // not implemented
+        , async function () {
+            
+            const parseMore = 
+                parseWebsocketFramesFactory();
+            
+            let errorsCount = 
+                0;
+                
+            try {
+                const iterator = 
+                    parseMore(
+                        // invalid argument
+                        [1]
+                    );
+                await iterator.next();
+            } catch (error) {
+                expect(error.message).toEqual(
+                    'buffer argument is not an instance of Uint8Array or null'
+                );
+                errorsCount++;
+            }
+            expect(errorsCount).toEqual(1);
         });
     
         it(

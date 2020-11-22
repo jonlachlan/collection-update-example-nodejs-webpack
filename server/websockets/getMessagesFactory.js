@@ -2,6 +2,7 @@
  * Copyright (c) Jon Lachlan 2020
 */
 
+import stream from 'stream';
 import getParsedWebsocketFramesFactory from './getParsedWebsocketFramesFactory.js';
 import sendMessageFactory from './sendMessageFactory.js';
 import FragmentedMessageStore from './FragmentedMessageStore.js';
@@ -14,6 +15,11 @@ import FragmentedMessageStore from './FragmentedMessageStore.js';
 export default function getMessagesFactory (
     socket /* <stream.Duplex> */
 ) {
+
+    if((socket instanceof stream.Duplex) !== true)
+        throw new Error(
+            'socket argument of getMessagesFactory is not an instance of stream.Duplex'
+        );
     
     const getParsedWebsocketFrames = 
         getParsedWebsocketFramesFactory(
