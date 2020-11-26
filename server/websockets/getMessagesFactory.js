@@ -4,7 +4,6 @@
 
 import stream from 'stream';
 import getParsedWebsocketFramesFactory from './getParsedWebsocketFramesFactory.js';
-import sendMessageFactory from './sendMessageFactory.js';
 import FragmentedMessageStore from './FragmentedMessageStore.js';
 
 /* 

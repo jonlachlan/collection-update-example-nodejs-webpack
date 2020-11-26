@@ -4,8 +4,9 @@
 
 import url from 'url';
 import sendHandshake from './sendHandshake.js';
-import sendMessageFactory from './sendMessageFactory.js';
+import sendFactory from './sendFactory.js';
 import getMessagesFactory from './getMessagesFactory.js';
+import prepareWebsocketFrame from './prepareWebsocketFrame.js';
 import prepareCloseFramePayload from './prepareCloseFramePayload.js';
 
 export default async function (
@@ -20,8 +21,8 @@ export default async function (
         return false;
     }
     
-    const sendMessage = 
-        sendMessageFactory(socket);
+    const send = 
+        sendFactory(socket);
     const getMessages =
         getMessagesFactory(socket);
     
@@ -43,14 +44,16 @@ export default async function (
                 mask === 0
             ) {
                 // No masking from client, close the connection with a status code 
-                sendMessage(
-                    prepareCloseFramePayload({
-                        code: 1002,
-                        reason: 'Websocket payload from client was not masked.'
-                    }),
-                    {
-                        opcode: 0x8 /* Close */                
-                    }
+                send(
+                    prepareWebsocketFrame(
+                        prepareCloseFramePayload({
+                            code: 1002,
+                            reason: 'Websocket payload from client was not masked.'
+                        }),
+                        {
+                            opcode: 0x8 /* Close */                
+                        }
+                    )
                 );
             } 
             
@@ -71,11 +74,13 @@ export default async function (
                 opcode === 0x9
             ) {
                 // Ping, respond with Pong
-                sendMessage(
-                    payload, 
-                    { 
-                        opcode: 0xA /* Pong */
-                    }
+                send(
+                    prepareWebsocketFrame(
+                        payload, 
+                        { 
+                            opcode: 0xA /* Pong */
+                        }
+                    )
                 );
             } else if(opcode === 0xA) {
                 // Pong
@@ -110,20 +115,38 @@ export default async function (
     );
     
     // Send Ping
-    sendMessage(
-        new Uint8Array(0), 
-        { 
-            opcode: 0x9 /* Ping */
-        }
+    send(
+        prepareWebsocketFrame(
+            new Uint8Array(0), 
+            { 
+                opcode: 0x9 /* Ping */
+            }
+        )
     );
     
     const encoder = 
         new TextEncoder('utf-8');
-    sendMessage(
-        encoder.encode("hello"), 
-        { 
-            isUtf8: true 
-        }
+
+    send(
+        prepareWebsocketFrame(
+            new Uint8Array(
+                encoder.encode("hello")
+            ),
+            { 
+                isUtf8: true
+            }
+        )
+    );
+    
+    send(
+        prepareWebsocketFrame(
+            new Uint8Array(
+                encoder.encode("guard dog")
+            ),
+            {
+                opcode: 0x1 /* Text */
+            }
+        )
     );
     
     const verySmallPayload = new Uint8Array(1);
@@ -132,24 +155,37 @@ export default async function (
     const largePayload = new Uint8Array(65536);
     const anotherLargePayload = new Uint8Array(10000000);
     
-    sendMessage(
-        verySmallPayload
+    send(
+        prepareWebsocketFrame(
+            verySmallPayload,
+            {
+                opcode: 0x2 /* Binary */
+            }
+        )
     );
     
-    sendMessage(
-        smallPayload
+    send(
+        prepareWebsocketFrame(
+            smallPayload
+        )
     );
     
-    sendMessage(
-        anotherSmallPayload
+    send(
+        prepareWebsocketFrame(
+            anotherSmallPayload
+        )
     );
-//     
-//     sendMessage(
-//         largePayload
-//     );
     
-    sendMessage(
-        anotherLargePayload
+    send(
+        prepareWebsocketFrame(
+            largePayload
+        )
+    );
+    
+    send(
+        prepareWebsocketFrame(
+            anotherLargePayload
+        )
     );
     
     return true;
